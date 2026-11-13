@@ -974,7 +974,7 @@ uses
   uVfsModule, fViewOperations, uMultiListFileSource,
   uFileSourceOperationTypes, uFileSourceCopyOperation, uFileSourceMoveOperation,
   uFileSourceProperty, uFileSourceExecuteOperation, uArchiveFileSource, uThumbFileView,
-  uShellExecute, fSymLink, fHardLink, uExceptions, uUniqueInstance, Clipbrd, ShellCtrls,
+  uShellExecute, fSymLink, fHardLink, uExceptions, uUniqueInstance, uRemoteControl, Clipbrd, ShellCtrls,
   uFileSourceOperationOptionsUI, uDebug, uHotkeyManager, uFileSourceUtil, uTempFileSystemFileSource,
   Laz2_XMLRead, DCOSUtils, DCStrUtils, fOptions, fOptionsFrame, fOptionsToolbar, uClassesEx,
   uHotDir, uFileSorting, DCBasicTypes, foptionsDirectoryHotlist, uConnectionManager,
@@ -1212,6 +1212,9 @@ begin
     UniqueInstance.OnMessage:= @OnUniqueInstanceMessage;
 
   MainFormCreate(Self);
+
+  // Other programs of this user may query and drive DC (off by default)
+  StartRemoteControl;
 
   // Load command line history
   edtCommand.Items.Assign(glsCmdLineHistory);
@@ -1836,6 +1839,8 @@ end;
 procedure TfrmMain.FormDestroy(Sender: TObject);
 begin
   DCDebug('Destroying main form');
+
+  StopRemoteControl;
 
   if Assigned(HotMan) then
   begin

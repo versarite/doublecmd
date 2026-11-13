@@ -400,6 +400,7 @@ var
   glsVolumeSizeHistory : TStringListEx;
   glsIgnoreList : TStringListEx;
   gOnlyOneAppInstance,
+  gRemoteControl,
   gColumnsTitleLikeValues: Boolean;
   gCutTextToColWidth : Boolean;
   gExtendCellWidth : Boolean;
@@ -1849,6 +1850,7 @@ begin
   gRunTermCmd := RunTermCmd;
   gRunTermParams := RunTermParams;
   gOnlyOneAppInstance := False;
+  gRemoteControl := False;
   gLynxLike := True;
   gForceFunctionKey:= False;
   gSortCaseSensitivity := cstNotSensitive;
@@ -2797,6 +2799,7 @@ begin
       gRunInTermStayOpenParams := GetValue(Node, 'RunInTerminalStayOpenParams', RunInTermStayOpenParams);
 
       gOnlyOneAppInstance := GetValue(Node, 'OnlyOneAppInstance', gOnlyOneAppInstance);
+      gRemoteControl := GetValue(Node, 'RemoteControl', gRemoteControl);
       gLynxLike := GetValue(Node, 'LynxLike', gLynxLike);
       gForceFunctionKey := GetValue(Node, 'ForceFunctionKey', gForceFunctionKey);
       if LoadedConfigVersion < 5 then
@@ -3574,6 +3577,7 @@ begin
     SetValue(Node, 'JustRunTermParams', gRunTermParams);
 
     SetValue(Node, 'OnlyOneAppInstance', gOnlyOneAppInstance);
+    SetValue(Node, 'RemoteControl', gRemoteControl);
     SetValue(Node, 'LynxLike', gLynxLike);
     SetValue(Node, 'ForceFunctionKey', gForceFunctionKey);
     SetValue(Node, 'FileSizeFormat', Ord(gFileSizeFormat));
