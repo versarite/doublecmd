@@ -18,9 +18,10 @@
      (PIPE_REJECT_REMOTE_CLIENTS); the first instance is created with
      FILE_FLAG_FIRST_PIPE_INSTANCE, so a second Double Commander does not
      serve the same name.
-   Only programs named in remoteallow.txt (configuration folder; made
-   with the one line "VersariteViewer" if missing) may connect at all;
-   any other name is turned away without a question. A listed program
+   Only programs named in remoteallow.txt (configuration folder) may
+   connect at all; any other name is turned away without a question. If
+   the file is missing, it is made with comments only (an example
+   included), so no program may connect until the user adds a name. A listed program
    says who it is (HELLO); the first time, the user is asked whether to
    allow it (the question shows its program file), and it gets a token,
    which it presents afterwards. Allowed programs are listed in
@@ -138,7 +139,6 @@ const
   CommandsFileName = 'remotecommands.txt';
   MaxCommands = 500;
   AllowFileName = 'remoteallow.txt';
-  DefaultAllowed = 'VersariteViewer';
   MaxLine = 65536;
   MaxEvents = 20;                      { per program; older ones are dropped }
   { How often the channel is looked at. The asking program waits for its
@@ -524,7 +524,8 @@ end;
 {$ENDIF}
 
 { remoteallow.txt: the program names that may connect at all, one per
-  line (; starts a comment). Missing: made with "VersariteViewer". }
+  line (# or ; starts a comment). Missing: made with comments only, so
+  nobody may connect yet; unreadable: nobody may connect. }
 function NameAllowed(const AName: String): Boolean;
 var
   Lines: TStringList;
@@ -540,16 +541,19 @@ begin
         Lines.LoadFromFile(FileName)
       else
       begin
-        Lines.Add('; Programs allowed to use Double Commander''s remote control, one name per line.');
-        Lines.Add(DefaultAllowed);
+        Lines.Add('# Programs allowed to use Double Commander''s remote control:');
+        Lines.Add('# one name per line, as the program gives it when it connects.');
+        Lines.Add('# Lines starting with # or ; are comments. Remove the # to allow');
+        Lines.Add('# a program, for example:');
+        Lines.Add('# VersariteViewer');
         Lines.SaveToFile(FileName);
+        Lines.Clear;
       end;
     except
       Lines.Clear;
-      Lines.Add(DefaultAllowed);
     end;
     for I := 0 to Lines.Count - 1 do
-      if (Trim(Lines[I]) <> '') and (Trim(Lines[I])[1] <> ';')
+      if (Trim(Lines[I]) <> '') and not (Trim(Lines[I])[1] in ['#', ';'])
         and (Trim(Lines[I]) = AName) then
         Exit(True);
   finally
