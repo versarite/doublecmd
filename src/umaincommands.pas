@@ -2348,6 +2348,22 @@ begin
   end;
 end;
 
+// Parameter of the thumbnail commands: state=on / off sets the view
+// (nothing happens if it is so already); without it they toggle.
+function ThumbnailsWanted(const Params: array of string; WorkingFileView: TFileView): Boolean;
+var
+  AState: String = '';
+begin
+  Result := True;
+  if GetParamValue(Params, 'state', AState) then
+  begin
+    if SameText(AState, 'on') or (AState = '1') then
+      Result := WorkingFileView.ClassType <> TThumbFileView
+    else if SameText(AState, 'off') or (AState = '0') then
+      Result := WorkingFileView.ClassType = TThumbFileView;
+  end;
+end;
+
 procedure ToggleOrNotToOrFromThumbnailsView(WorkingFileView: TFileView; WorkingNotebook: TFileViewNotebook);
 var
   aFileView: TFileView;
@@ -2377,21 +2393,27 @@ end;
 procedure TMainCommands.cm_ThumbnailsView(const Params: array of string);
 begin
   case frmMain.SelectedPanel of
-    fpLeft: ToggleOrNotToOrFromThumbnailsView(frmMain.FrameLeft, frmMain.LeftTabs);
-    fpRight: ToggleOrNotToOrFromThumbnailsView(frmMain.FrameRight, frmMain.RightTabs);
+    fpLeft:
+      if ThumbnailsWanted(Params, frmMain.FrameLeft) then
+        ToggleOrNotToOrFromThumbnailsView(frmMain.FrameLeft, frmMain.LeftTabs);
+    fpRight:
+      if ThumbnailsWanted(Params, frmMain.FrameRight) then
+        ToggleOrNotToOrFromThumbnailsView(frmMain.FrameRight, frmMain.RightTabs);
   end;
   frmMain.ActiveFrame.SetFocus;
 end;
 
 procedure TMainCommands.cm_LeftThumbView(const Params: array of string);
 begin
-  ToggleOrNotToOrFromThumbnailsView(frmMain.FrameLeft, frmMain.LeftTabs);
+  if ThumbnailsWanted(Params, frmMain.FrameLeft) then
+    ToggleOrNotToOrFromThumbnailsView(frmMain.FrameLeft, frmMain.LeftTabs);
   frmMain.ActiveFrame.SetFocus;
 end;
 
 procedure TMainCommands.cm_RightThumbView(const Params: array of string);
 begin
-  ToggleOrNotToOrFromThumbnailsView(frmMain.FrameRight, frmMain.RightTabs);
+  if ThumbnailsWanted(Params, frmMain.FrameRight) then
+    ToggleOrNotToOrFromThumbnailsView(frmMain.FrameRight, frmMain.RightTabs);
   frmMain.ActiveFrame.SetFocus;
 end;
 
@@ -2560,19 +2582,33 @@ begin
       bMakeViaCopy := True
     end;
 
-    ActiveFile := ActiveFrame.CloneActiveFile;
-    if Assigned(ActiveFile) and ActiveFile.IsNameValid then
+    // path=<folder>: created without the dialog (a script, a remote
+    // program); relative to the active panel's folder, or absolute.
+    // An existing folder is left as it is.
+    sPath := EmptyStr;
+    if GetParamValue(Params, 'path', sPath) and (sPath <> EmptyStr) then
     begin
-      if ActiveFile.IsDirectory or ActiveFile.IsLinkToDirectory then
-        sPath := ActiveFile.Name
-      else begin
-        sPath := ActiveFile.NameNoExt;
-      end;
+      sPath := PrepareParameter(sPath);
+      if ActiveFrame.FileSource.IsClass(TFileSystemFileSource) and
+         mbDirectoryExists(GetAbsoluteFileName(ActiveFrame.CurrentPath, sPath)) then
+        Exit;
     end
     else
-      sPath := EmptyStr;
+    begin
+      ActiveFile := ActiveFrame.CloneActiveFile;
+      if Assigned(ActiveFile) and ActiveFile.IsNameValid then
+      begin
+        if ActiveFile.IsDirectory or ActiveFile.IsLinkToDirectory then
+          sPath := ActiveFile.Name
+        else begin
+          sPath := ActiveFile.NameNoExt;
+        end;
+      end
+      else
+        sPath := EmptyStr;
 
-    if not ShowMkDir(frmMain, sPath) then Exit;   // show makedir dialog
+      if not ShowMkDir(frmMain, sPath) then Exit;   // show makedir dialog
+    end;
     if (sPath = EmptyStr) then Exit;
 
     if bMakeViaCopy then
