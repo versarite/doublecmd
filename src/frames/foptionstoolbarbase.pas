@@ -286,7 +286,99 @@ uses
   uVariableMenuSupport, uComponentsSignature, fEditSearch, fMainCommandsDlg,
   uFileProcs, uDebug, DCOSUtils, uShowMsg, DCStrUtils, uLng, uOSForms, uDCUtils,
   uPixMapManager, uKASToolItemsExtended, fMain, uSpecialDir, dmHelpManager,
-  uGlobsPaths;
+  uGlobsPaths, uRemoteControl;
+
+type
+  { cm_ViewerCommand's parameter helper (remote control): the commands the
+    connected program said it has (SET COMMANDS), as a menu; a click puts
+    cmd=<name> into the parameters and its caption into an empty or default
+    tooltip. }
+  TClientCommandMenu = class(TPopupMenu)
+  private
+    FParams: TMemo;
+    FToolTip: TEdit;
+    FDefaultTip: String;
+    FCaptions: TStringList;
+    procedure ItemClick(Sender: TObject);
+  public
+    constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+  end;
+
+var
+  ClientCommandMenu: TClientCommandMenu = nil;
+
+constructor TClientCommandMenu.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+  FCaptions := TStringList.Create;
+end;
+
+destructor TClientCommandMenu.Destroy;
+begin
+  FCaptions.Free;
+  inherited Destroy;
+end;
+
+procedure TClientCommandMenu.ItemClick(Sender: TObject);
+var
+  Index, I: Integer;
+  CmdName, Line: String;
+begin
+  Index := (Sender as TMenuItem).Tag;
+  if (Index < 0) or (Index >= FCaptions.Count) then
+    Exit;
+  CmdName := FCaptions.Names[Index];
+  { The command name replaces an earlier one (cmd=... or a bare name). }
+  for I := FParams.Lines.Count - 1 downto 0 do
+  begin
+    Line := Trim(FParams.Lines[I]);
+    if (Line = '') or (Pos('cmd=', LowerCase(Line)) = 1) or (Pos('=', Line) = 0) then
+      FParams.Lines.Delete(I);
+  end;
+  FParams.Lines.Insert(0, 'cmd=' + CmdName);
+  if (FCaptions.ValueFromIndex[Index] <> '') and
+     ((Trim(FToolTip.Text) = '') or (FToolTip.Text = FDefaultTip)) then
+    FToolTip.Text := FCaptions.ValueFromIndex[Index];
+end;
+
+{ Shows the menu for cm_ViewerCommand when commands are known; False:
+  another command, or none known (the usual helper then). }
+function ShowClientCommandMenu(const ACommand: String; AParams: TMemo; AToolTip: TEdit;
+  const ADefaultTip: String): Boolean;
+var
+  I: Integer;
+  Item: TMenuItem;
+  Caption: String;
+begin
+  Result := False;
+  if not SameText(ACommand, 'cm_ViewerCommand') then
+    Exit;
+  if ClientCommandMenu = nil then
+    ClientCommandMenu := TClientCommandMenu.Create(Application);
+  RemoteClientCommands(ClientCommandMenu.FCaptions);
+  if ClientCommandMenu.FCaptions.Count = 0 then
+    Exit;
+  ClientCommandMenu.FParams := AParams;
+  ClientCommandMenu.FToolTip := AToolTip;
+  ClientCommandMenu.FDefaultTip := ADefaultTip;
+  ClientCommandMenu.Items.Clear;
+  for I := 0 to ClientCommandMenu.FCaptions.Count - 1 do
+  begin
+    Item := TMenuItem.Create(ClientCommandMenu);
+    Caption := ClientCommandMenu.FCaptions.ValueFromIndex[I];
+    if Caption = '' then
+      Item.Caption := ClientCommandMenu.FCaptions.Names[I]
+    else
+      Item.Caption := StringReplace(Caption, '&', '&&', [rfReplaceAll])
+        + '   (' + ClientCommandMenu.FCaptions.Names[I] + ')';
+    Item.Tag := I;
+    Item.OnClick := @ClientCommandMenu.ItemClick;
+    ClientCommandMenu.Items.Add(Item);
+  end;
+  ClientCommandMenu.PopUp;
+  Result := True;
+end;
 
 const
   cHotKeyCommand = 'cm_ExecuteToolbarItem';
@@ -688,7 +780,15 @@ end;
 
 { TfrmOptionsToolbarBase.btnInternalParametersHelperClick }
 procedure TfrmOptionsToolbarBase.btnInternalParametersHelperClick(Sender: TObject);
+var
+  Command: String = '';
 begin
+  { cm_ViewerCommand: the connected program's commands (remote control). }
+  if cbInternalCommand.ItemIndex >= 0 then
+    Command := cbInternalCommand.Items[cbInternalCommand.ItemIndex];
+  if ShowClientCommandMenu(Command, edtInternalParameters, edtToolTip,
+    FFormCommands.GetCommandCaption(Command, cctLong)) then
+    Exit;
   BringPercentVariablePopupMenu(edtInternalParameters);
 end;
 
