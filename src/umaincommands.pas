@@ -234,6 +234,12 @@ type
    procedure cm_Edit(const Params: array of string);
    procedure cm_EditPath(const Params: array of string);
    procedure cm_MakeDir(const Params: array of string);
+   procedure cm_SendTree(const Params: array of string);
+   procedure cm_ViewerFollowModeOn(const Params: array of string);
+   procedure cm_ViewerFollowModeOff(const Params: array of string);
+   procedure cm_ViewerCommand(const Params: array of string);
+   procedure cm_RemoteSendFolderToInactive(const Params: array of string);
+   procedure cm_RemoteCreateSortFromSubdirs(const Params: array of string);
    procedure cm_Rename(const Params: array of string);
    procedure cm_RenameNoAsk(const Params: array of string);
    procedure cm_View(const Params: array of string);
@@ -393,7 +399,7 @@ type
 
 implementation
 
-uses fOptionsPluginsBase, fOptionsPluginsDSX, fOptionsPluginsWCX,
+uses uRemoteControl, fOptionsPluginsBase, fOptionsPluginsDSX, fOptionsPluginsWCX,
      fOptionsPluginsWDX, fOptionsPluginsWFX, fOptionsPluginsWLX, uFlatViewFileSource,
      uFindFiles, Forms, Controls, Dialogs, Clipbrd, strutils, LCLProc, HelpIntfs, DCStringHashListUtf8,
      dmHelpManager, typinfo, fMain, fPackDlg, fMkDir, DCDateTimeUtils, KASToolBar, KASToolItems,
@@ -2556,6 +2562,82 @@ end;
 procedure TMainCommands.cm_RenameNoAsk(const Params: array of string);
 begin
   frmMain.MoveFiles(frmMain.NotActiveFrame.CurrentPath, False);
+end;
+
+// The first-level folders of the active panel's
+// folder go to the programs connected through the remote control
+// (VersariteViewer adds them to its current sort list). Meant for a
+// toolbar button.
+procedure TMainCommands.cm_SendTree(const Params: array of string);
+begin
+  RemoteSendTree;
+end;
+
+// The connected viewer follows
+// Double Commander - its folder and the file under the cursor; mode=1:
+// the folder only, mode=2: also the file. No mode: the viewer's last one.
+procedure TMainCommands.cm_ViewerFollowModeOn(const Params: array of string);
+var
+  Param, Mode: String;
+begin
+  Mode := 'on';
+  for Param in Params do
+    if Pos('mode=', LowerCase(Param)) = 1 then
+      Mode := Trim(Copy(Param, 6, MaxInt));
+  RemoteViewerFollow(Mode);
+end;
+
+// The connected viewer stops following.
+procedure TMainCommands.cm_ViewerFollowModeOff(const Params: array of string);
+begin
+  RemoteViewerFollow('off');
+end;
+
+// One of the connected viewer's own commands, by the
+// name it uses for its key / mouse settings: cmd=SlideShow (or just
+// SlideShow as the parameter). VersariteViewer: NextImage, SideBySide,
+// DirPreview, RapidSelection, SortPanel, Fullscreen ...
+procedure TMainCommands.cm_ViewerCommand(const Params: array of string);
+var
+  Param, sCommand: String;
+begin
+  sCommand := '';
+  for Param in Params do
+    if Pos('cmd=', LowerCase(Param)) = 1 then
+      sCommand := Trim(Copy(Param, 5, MaxInt))
+    else if (sCommand = '') and (Pos('=', Param) = 0) then
+      sCommand := Trim(Param);
+  RemoteViewerCommand(sCommand);
+end;
+
+// The inactive panel goes to the folder the connected
+// viewer shows (the viewer answers with cm_ChangeDir inactivepath=).
+procedure TMainCommands.cm_RemoteSendFolderToInactive(const Params: array of string);
+begin
+  RemoteViewerCommand('SendFolderToInactive');
+end;
+
+// The connected viewer makes a new folder list (a new
+// tab of its sort panel) of the first-level subfolders of the folder under
+// the cursor. Parameter 1: that folder itself as the first entry; 0 or no
+// parameter: only its subfolders.
+procedure TMainCommands.cm_RemoteCreateSortFromSubdirs(const Params: array of string);
+var
+  Param, sValue: String;
+  bWithFolder: Boolean = False;
+begin
+  for Param in Params do
+  begin
+    sValue := Trim(Param);
+    if Pos('=', sValue) > 0 then
+      sValue := Trim(Copy(sValue, Pos('=', sValue) + 1, MaxInt));
+    if sValue = '1' then
+      bWithFolder := True;
+  end;
+  if bWithFolder then
+    RemoteViewerCommand('CreateSortFromSubdirsWithFolder')
+  else
+    RemoteViewerCommand('CreateSortFromSubdirs');
 end;
 
 procedure TMainCommands.cm_MakeDir(const Params: array of string);

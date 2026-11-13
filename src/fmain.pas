@@ -479,6 +479,12 @@ type
     actEdit: TAction;
     actCopy: TAction;
     actRename: TAction;
+    actSendTree: TAction;
+    actViewerFollowModeOn: TAction;
+    actViewerFollowModeOff: TAction;
+    actViewerCommand: TAction;
+    actRemoteSendFolderToInactive: TAction;
+    actRemoteCreateSortFromSubdirs: TAction;
     actMakeDir: TAction;
     actDelete: TAction;
     actAbout: TAction;

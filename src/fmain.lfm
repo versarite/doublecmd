@@ -1911,6 +1911,54 @@ object frmMain: TfrmMain
       HelpType = htKeyword
       OnExecute = actExecute
     end
+    object actSendTree: TAction
+      Tag = 18
+      Category = 'Tools'
+      Caption = 'Send folder tree to viewer'
+      Hint = 'Sends the first-level subfolders of the active panel to the sort panel of the connected viewer (VersariteViewer)'
+      HelpType = htKeyword
+      OnExecute = actExecute
+    end
+    object actViewerFollowModeOn: TAction
+      Tag = 18
+      Category = 'Tools'
+      Caption = 'Viewer follow mode on'
+      Hint = 'The connected viewer follows Double Commander (parameter mode=1: folder, mode=2: folder and file)'
+      HelpType = htKeyword
+      OnExecute = actExecute
+    end
+    object actViewerFollowModeOff: TAction
+      Tag = 18
+      Category = 'Tools'
+      Caption = 'Viewer follow mode off'
+      Hint = 'The connected viewer stops following Double Commander'
+      HelpType = htKeyword
+      OnExecute = actExecute
+    end
+    object actViewerCommand: TAction
+      Tag = 18
+      Category = 'Tools'
+      Caption = 'Viewer command'
+      Hint = 'Runs a command of the connected viewer (parameter cmd=<name>, e.g. cmd=SlideShow)'
+      HelpType = htKeyword
+      OnExecute = actExecute
+    end
+    object actRemoteSendFolderToInactive: TAction
+      Tag = 18
+      Category = 'Tools'
+      Caption = 'Viewer''s folder to the inactive panel'
+      Hint = 'The inactive panel goes to the folder the connected viewer shows'
+      HelpType = htKeyword
+      OnExecute = actExecute
+    end
+    object actRemoteCreateSortFromSubdirs: TAction
+      Tag = 18
+      Category = 'Tools'
+      Caption = 'New viewer folder list from subfolders'
+      Hint = 'The connected viewer makes a new sort folder list of the subfolders of the folder under the cursor (parameter 1: that folder first)'
+      HelpType = htKeyword
+      OnExecute = actExecute
+    end
     object actMakeDir: TAction
       Tag = 4
       Category = 'File Operations'
