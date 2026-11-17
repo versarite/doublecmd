@@ -1915,7 +1915,7 @@ object frmMain: TfrmMain
       Tag = 18
       Category = 'Tools'
       Caption = 'Send folder tree to viewer'
-      Hint = 'Sends the first-level subfolders of the active panel to the sort panel of the connected viewer (VersariteViewer)'
+      Hint = 'Sends the active panel''s folder and its first-level subfolders to the connected program'
       HelpType = htKeyword
       OnExecute = actExecute
     end

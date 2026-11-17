@@ -1580,8 +1580,8 @@ begin
       Line := Line + #9 + Subs[I];
     Sent := Server.Broadcast(Line);
     if Sent = 0 then
-      MessageDlg('Double Commander', 'Send tree: no program is connected '
-        + '(VersariteViewer connects by itself while it runs).', mtInformation, [mbOK], 0);
+      MessageDlg('Double Commander', 'Send tree: no program is connected to the remote control.',
+        mtInformation, [mbOK], 0);
   finally
     Subs.Free;
   end;
@@ -1596,8 +1596,8 @@ begin
     Exit;
   end;
   if Server.Broadcast('FOLLOW' + #9 + AMode) = 0 then
-    MessageDlg('Double Commander', 'Viewer follow mode: no viewer is connected '
-      + '(VersariteViewer connects by itself while it runs).', mtInformation, [mbOK], 0);
+    MessageDlg('Double Commander', 'Viewer follow mode: no viewer is connected to the remote control.',
+      mtInformation, [mbOK], 0);
 end;
 
 procedure RemoteViewerCommand(const AName: String);
@@ -1615,8 +1615,8 @@ begin
     Exit;
   end;
   if Server.Broadcast('COMMAND' + #9 + AName) = 0 then
-    MessageDlg('Double Commander', 'Viewer command: no viewer is connected '
-      + '(VersariteViewer connects by itself while it runs).', mtInformation, [mbOK], 0);
+    MessageDlg('Double Commander', 'Viewer command: no viewer is connected to the remote control.',
+      mtInformation, [mbOK], 0);
 end;
 
 {$ELSE}
