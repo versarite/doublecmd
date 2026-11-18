@@ -14,11 +14,9 @@ branch here, not to them. Double Commander's own README follows below.
 
 **VersariteViewer and Double Commander together** (1 min 40 s):
 
-<!-- Put the same https://github.com/user-attachments/assets/... line here as in VersariteViewer's readme
-     (an uploaded video can be used in any README on GitHub). -->
-https://github.com/user-attachments/assets/REPLACE-WITH-UPLOADED-VIDEO
+https://github.com/user-attachments/assets/51d4252d-0e09-4e7e-b5c4-178712619f69
 
-([the video as a file](https://github.com/versarite/VersariteViewer/blob/main/docs/VersariteViewer_DoubleCommander.mp4))
+([the video as a file](docs/VersariteViewer_DoubleCommander.mp4?raw=true))
 
 ## Download
 
