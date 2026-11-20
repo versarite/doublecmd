@@ -1260,14 +1260,14 @@ var
   AFile: TFile;
   AFiles: TFiles;
   AFileView: TFileView;
-  AFlatView: ISearchResultFileSource;
+  AFlatView: TFlatViewFileSource;
 begin
   AFileView:= frmMain.ActiveFrame;
   AFileSource:= AFileView.FileSource;
   if AFileView.FlatView then
   begin
     AFileView.FlatView := False;
-    if AFileSource.IsInterface(ISearchResultFileSource) then
+    if AFileSource.IsInterface(IFlatViewFileSource) then
       AFileView.ChangePathToParent(True)
     else
       AFileView.Reload;
@@ -1293,7 +1293,7 @@ begin
   AFiles.Free;
 
   // Create search result file source.
-  AFlatView := TFlatViewFileSource.Create;
+  AFlatView := TFlatViewFileSource.Create(AFileView.CurrentPath);
   AFlatView.AddList(AFileList, AFileSource);
 
   AFileView.AddFileSource(AFlatView, AFileView.CurrentPath);
@@ -5757,7 +5757,7 @@ var
   NewPage: TFileViewPage;
   StringList: TStringListUAC;
   Notebook: TFileViewNotebook;
-  SearchResultFS: ISearchResultFileSource;
+  flatViewFS: IFlatViewFileSource;
 begin
   with frmMain do
   begin
@@ -5795,11 +5795,11 @@ begin
           on EFileNotFound do ;
         end;
       end;
-      SearchResultFS := TSearchResultFileSource.Create;
-      SearchResultFS.AddList(FileList, TFileSystemFileSource.GetFileSource);
+      flatViewFS := TFlatViewFileSource.Create( PathDelim );
+      flatViewFS.AddList(FileList, TFileSystemFileSource.GetFileSource);
 
       NewPage := Notebook.ActivePage;
-      NewPage.FileView.AddFileSource(SearchResultFS, SearchResultFS.GetRootDir);
+      NewPage.FileView.AddFileSource(flatViewFS, flatViewFS.GetRootDir);
       NewPage.FileView.FlatView := True;
       NewPage.MakeActive;
     except

@@ -2048,6 +2048,14 @@ var
   ANewSet: TPanelColumnsClass;
   NewSorting: TFileSortings;
   AHeader: TWCXHeader;
+
+  function getSearchText: String; inline;
+  begin
+    if cbFindText.Checked then
+      Result:= cmbFindText.Text
+    else
+      Result:= EmptyStr;
+  end;
 begin
   StopSearch;
 
@@ -2077,7 +2085,7 @@ begin
 
   // Create search result file source.
   // Currently only searching FileSystem is supported.
-  SearchResultFS := TSearchResultFileSource.Create( rsSearchResult );
+  SearchResultFS := TSearchResultFileSource.Create( getSearchText, cmbFindPathStart.Text, cmbFindFileMask.Text );
   SearchResultFS.AddList(FileList, FFileSource);
 
   // Add new tab for search results.
