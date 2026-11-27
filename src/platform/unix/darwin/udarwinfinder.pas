@@ -117,6 +117,8 @@ type
       message 'doublecmd_editingString';
     function editingStringRange: NSRange;
       message 'doublecmd_editingStringRange';
+    function editingStringIndexInObjectValue: NSUInteger;
+      message 'doublecmd_editingStringIndexInObjectValue';
     function isSelectedTokenObject( const anObject: id ): Boolean;
       message 'doublecmd_isSelectedTokenObject:';
   end;
@@ -164,6 +166,7 @@ type
     procedure insertCurrentFilterToken; message 'doublecmd_insertCurrentFilterToken';
     procedure tokenField_onUpdate( editingString: NSString = nil );
   private
+    function tokenField_shouldAddObjects_atIndex(tokenField: NSTokenField; tokens: NSArray; index: NSUInteger): NSArray;
     function control_textView_doCommandBySelector (control: NSControl; textView: NSTextView; commandSelector: SEL): ObjCBOOL;
     procedure popoverWillClose(notification: NSNotification);
     procedure popoverDidClose (notification: NSNotification);
@@ -346,15 +349,15 @@ begin
 
   editor.setNeedsDisplay_( True );
 
-  range:= self.currentEditor.selectedRange;
+  if self.editingStringRange.length <> 0 then
+    Exit;
+
+  range:= editor.selectedRange;
   if range.length = 0 then
     Exit;
 
   beginIndex:= range.location;
   endIndex:= range.location + range.length - 1;
-
-  if editor.string_.characterAtIndex(beginIndex) <> NSAttachmentCharacter then
-    Exit;
 
   tokenNames:= NSArray( objectValue );
   for i:= beginIndex to endIndex do begin
@@ -395,9 +398,12 @@ var
   newTokenRange: NSRange;
 
   procedure removeEditingToken;
+  var
+    editingIndex: NSUInteger;
   begin
-    if newTokenRange.length > 0 then
-      tokenNames.removeObjectAtIndex( newTokenRange.location );
+    editingIndex:= self.editingStringIndexInObjectValue;
+    if editingIndex <> NSNotFound then
+      tokenNames.removeObjectAtIndex( editingIndex );
   end;
 
   procedure removeDuplicateToken;
@@ -450,52 +456,50 @@ end;
 
 function TCocoaTokenField.editingStringRange: NSRange;
 var
-  editor: NSText;
   editorString: NSString;
-  caretIndex: NSUInteger;
-
-  function findLastToken: NSUInteger;
-  var
-    tokenRange: NSRange;
-    tokenIndex: NSUInteger;
-  begin
-    tokenRange.location:= 0;
-    tokenRange.length:= caretIndex;
-    tokenRange:= editorString.rangeOfString_options_range(
-      NSSTR_ATTACHMENT_CHARACTER, NSBackwardsSearch, tokenRange );
-    tokenIndex:= tokenRange.location;
-    if tokenIndex = NSNotFound then
-      tokenIndex:= 0
-    else
-      tokenIndex:= tokenIndex + 1;
-    Result:= tokenIndex;
-  end;
-
-  function findNextToken: NSUInteger;
-  var
-    tokenRange: NSRange;
-    tokenIndex: NSUInteger;
-  begin
-    tokenRange.location:= caretIndex;
-    tokenRange.length:= editorString.length - caretIndex;
-    tokenRange:= editorString.rangeOfString_options_range(
-      NSSTR_ATTACHMENT_CHARACTER, 0, tokenRange );
-    tokenIndex:= tokenRange.location;
-    if tokenIndex = NSNotFound then
-      tokenIndex:= editorString.length;
-    Result:= tokenIndex;
-  end;
-
-  function calcRange( beginIndex: NSUInteger; endIndex: NSUInteger ): NSRange;
-  begin
-    Result.location:= beginIndex;
-    Result.length:= endIndex - beginIndex;
-  end;
+  i: NSUInteger;
+  c: unichar;
 begin
-  editor:= self.currentEditor;
-  editorString:= editor.string_;
-  caretIndex:= editor.selectedRange.location;
-  Result:= calcRange( findLastToken, findNextToken );
+  Result.location:= self.currentEditor.selectedRange.location;
+  Result.length:= 0;
+  editorString:= self.currentEditor.string_;
+  if editorString.length = 0 then
+    Exit;
+
+  for i:= 0 to editorString.length-1 do begin
+    c:= editorString.characterAtIndex(i);
+    if c <> NSAttachmentCharacter then begin
+      Result.location:= i;
+      Result.length:= editorString.length - Result.location;
+      break;
+    end;
+  end;
+  if Result.length = 0 then
+    Exit;
+
+  for i:= Result.location+1 to editorString.length-1 do begin
+    c:= editorString.characterAtIndex(i);
+    if c = NSAttachmentCharacter then begin
+      Result.length:= i - Result.location;
+      break;
+    end;
+  end;
+end;
+
+function TCocoaTokenField.editingStringIndexInObjectValue: NSUInteger;
+var
+  editingRange: NSRange;
+  tagNames: NSArray;
+begin
+  Result:= NSNotFound;
+  editingRange:= self.editingStringRange;
+  if editingRange.length = 0 then
+    Exit;
+  tagNames:= NSMutableArray(self.objectValue);
+  if editingRange.location >= tagNames.count then
+    Exit;
+  if self.editingString.isEqual(tagNames.objectAtIndex(editingRange.location)) then
+    Result:=  editingRange.location;
 end;
 
 { TFinderTagsListView }
@@ -764,17 +768,30 @@ begin
   self.updateLayout;
 end;
 
+function TFinderTagsEditorPanel.tokenField_shouldAddObjects_atIndex(
+  tokenField: NSTokenField; tokens: NSArray; index: NSUInteger): NSArray;
+var
+  tokenName: NSString;
+begin
+  Result:= NSArray.new.autorelease;
+  if NOT tokenField.isKindOfClass(TCocoaTokenField) then
+    Exit;
+  for tokenName in tokens do
+    TCocoaTokenField(tokenField).insertTokenNameReplaceEditingString( tokenName );
+  self.tokenField_onUpdate;
+end;
+
 procedure TFinderTagsEditorPanel.updateFilter( substring: NSString );
 var
   tagName: NSString;
   usedTagNames: NSMutableArray;
-  editingRange: NSRange;
+  editingIndex: NSUInteger;
 begin
   _filterTagNames.removeAllObjects;
   usedTagNames:= NSMutableArray.arrayWithArray( _tagsTokenField.objectValue );
-  editingRange:= _tagsTokenField.editingStringRange;
-  if editingRange.length > 0 then
-    usedTagNames.removeObjectAtIndex( editingRange.location );
+  editingIndex:= _tagsTokenField.editingStringIndexInObjectValue;
+  if editingIndex <> NSNotFound then
+    usedTagNames.removeObjectAtIndex( editingIndex );
 
   for tagName in TFinderTags.tags do begin
     if (substring.length>0) and (NOT tagName.localizedCaseInsensitiveContainsString(substring)) then
